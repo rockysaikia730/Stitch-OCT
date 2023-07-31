@@ -18,7 +18,7 @@ start = 25
 end = 125
 #Threshold Intensity for Noise
 #All pixels with intensity <160 are made 0
-NoiseThreshold = 160
+NoiseThreshold = 100
 
 #Lowe Ratio
 #Higher the better but 0.7 is optimum
