@@ -2,30 +2,41 @@ import cv2
 import numpy as np
 import tifffile as tff
 
-#Read Tif file
+#-----Parameters---------
 filePath = '' #File Path
-fileName = '__3d_2023-07-11_100304_raster_1000x300_structure_reduced.tif' #File Name
-imgPath = filePath + fileName
-readTiff = tff.imread(imgPath)
+fileName = '__3d_2023-07-11_100304_raster_1000x300_structure_reduced.tif'
 
 #Starting frame and end frame
 start = 60
 end = 240
 
+NoiseThreshold = 100
+delXThreshold = 30
+
+Loweratio = 0.7 
+
+lowRange = (20,255,100)
+upperRange = (90,255,255)
+
+saveFileName = "withoutconj.png"
+#-------------------------
+
+
+#Read Tif file
+imgPath = filePath + fileName
+readTiff = tff.imread(imgPath)
+
 #First frame
 firstImg = np.array(readTiff[start,:,:],dtype=np.uint8)
 firstImg = firstImg[10:-10,5:-5]
-firstImg = np.where(firstImg > 100,firstImg,0)
+firstImg = np.where(firstImg > NoiseThreshold,firstImg,0)
 #_, firstImg = cv2.threshold(firstImg, 100, 255, cv2.THRESH_BINARY)
 
 #Second frame
 secondImg = np.array(readTiff[start+1,:,:],dtype=np.uint8)
 secondImg = secondImg[10:-10,5:-5]
-secondImg = np.where(secondImg > 100,secondImg,0)
+secondImg = np.where(secondImg > NoiseThreshold,secondImg,0)
 #_, secondImg = cv2.threshold(secondImg, 100, 255, cv2.THRESH_BINARY)
-
-
-Loweratio = 0.7 
 
 #Get matching features and detect shift in Y
 sift = cv2.SIFT_create()
@@ -51,7 +62,7 @@ totalIterations = len(src_pts)
 for i in range(totalIterations):
     delx = src_pts[i][0] - dst_pts[i][0]
     dely = src_pts[i][1] - dst_pts[i][1]
-    if(delx**2 < 30):
+    if(delx**2 < delXThreshold):
         delyList.append(dely)
 
 ShiftInY = abs(int(np.rint(np.average(delyList))))
@@ -85,8 +96,6 @@ for i in range(start+2,end):
 
     #This conversion loses information-Dont do it HSV to BGR
     #mask = cv2.cvtColor(mask, cv2.COLOR_HSV2BGR)
-    lowRange = (20,255,100)
-    upperRange = (90,255,255)
     mask = cv2.inRange(mask, lowRange,upperRange)
     final = cv2.bitwise_and(curImg,curImg,mask=mask)
     #cv2.imshow("hf",final)
@@ -95,10 +104,10 @@ for i in range(start+2,end):
     prevImg = curImg
     curImg = np.array(readTiff[i,:,:],dtype=np.uint8)
     curImg = curImg[10:-10,5:-5]
-    curImg = np.where(curImg > 100,curImg,0)
+    curImg = np.where(curImg > NoiseThreshold,curImg,0)
     #_, curImg = cv2.threshold(curImg, 100, 255, cv2.THRESH_BINARY)
 
-cv2.imshow("hfjf",result)
-
-cv2.waitKey(0)
+#cv2.imshow("hfjf",result)
+cv2.imwrite(saveFileName,result)
+#cv2.waitKey(0)
 cv2.destroyAllWindows()
